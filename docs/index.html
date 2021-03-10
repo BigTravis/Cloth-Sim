@@ -1,0 +1,211 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Mesh Editor</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2020</h1>
+<h1 align="middle">Project 4: Cloth Simulator</h1>
+<h2 align="middle">Travis Morrissey, CS184-aey</h2>
+
+<br><br>
+
+    <div>
+
+        <h2 align="middle">Overview</h2>
+        <p>This project simulates cloth as it is affected by various forces like gravity and itself. I learned quite a lot 
+        from this project. Seeing the principles discussed during lecture be applied has been really informative. I was really
+        impressed at how effective a point mass and spring system can simulate cloth.</p>
+
+        <h2 align="middle">Part I: Masses and springs</h2>
+        <p>
+            The implementation of part 1 involves creating masses with a nested for loop that iterates num_height_points * num_width_points times.
+            In each iteration a mass is created in it's respective position in the 2-D cloth space. The spacing for each point mass
+            is determined by dividing the width by the number of width points, and dividing the height by the number of height points.
+            The orientation of the cloth determined the position of either the y value or the z value. After the point masses were created,
+            the springs were next. By iterating through the point_masses vector and checking for specific conditions, we can assign springs to
+            point masses. Determining these conditions are done by calculating if there are point masses available to be attached to from the current
+            pont mass.
+        </p>
+
+        <div align="middle">
+            <table style="width=100%">
+                <tr>
+                    <td>
+                        <img src="img/part1-img1.png" align="middle" width="400px" />
+                        <figcaption align="middle">All constraints enabled.</figcaption>
+                    </td>
+                    <td>
+                        <img src="img/part1-img2.png" align="middle" width="400px" />
+                        <figcaption align="middle">Without sheering constraints.</figcaption>
+                    </td>
+                    <td>
+                        <img src="img/part1-img3.png" align="middle" width="400px" />
+                        <figcaption align="middle">With only sheering constraints.</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+
+        <h2 align="middle">Part II: Simulation via numerical integration</h2>
+        <p>
+            Simulating cloth is done by first summing all external accelerations and dividing that by the mass to get a total external force vector.
+            Iterating through each point mass, we reset the force vector for that point mass, and then add the total external force vector to the
+            point mass' force vector. The Springs have an effect on the force vector of the point mass, and so we need to factor them in. Iterating
+            through the springs, we calculate the spring forces using Hooke's law and apply it it the unit direction vector between the two point masses
+            of each spring. This scaled unit vector is then added to one mass and subtracted from the opposite.
+        </p>
+
+        <p>
+            The actual integration is done by iterating through each point mass and applying the Verlet integration formula to calculate the next position
+            of each mass.  Applying a spring stretch constraint to prevent a deformation of over 1.1 times the resting spring length is done by
+            calculating the actual length of the spring, and then taking the difference between it and the max deformation length allowed.
+            The positions of the point masses attached to the spring is moved by half of this difference, which is done by adding/subtracting the
+            direction vector scaled by half of the difference. If both point masses are unpinned, then each mass gets moved, else only the unpinned mass
+            gets moved at the full difference length.
+        </p>
+
+        <p>
+            Running the simulation with a small spring constant results in a cloth sagging greater from the pinned points.
+            Conversly a high spring constant results in the cloth being stiffer and not sagging very much, if at all.
+            Increased density has an effect similar to decreasing the spring constant, and vice versa.
+            Increasing the damping slows the rate of change of the cloth.
+        </p>
+
+        <div align="middle">
+            <table style="width=100%">
+                <tr>
+                    <td>
+                        <img src="img/part2-img1.png" align="middle" width="400px" />
+                        <figcaption align="middle">Very low spring constant.</figcaption>
+                    </td>
+                    <td>
+                        <img src="img/part2-img2.png" align="middle" width="400px" />
+                        <figcaption align="middle">Very high spring constant.</figcaption>
+                    </td>
+                    <td>
+                        <img src="img/part2-img3.png" align="middle" width="400px" />
+                        <figcaption align="middle">Very high density.</figcaption>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img src="img/part2-img4.png" align="middle" width="400px" />
+                        <figcaption align="middle">Zero damping.</figcaption>
+                    </td>
+                    <td>
+                        <img src="img/part2-img5.png" align="middle" width="400px" />
+                        <figcaption align="middle">Final resting state of pinned4.</figcaption>
+                    </td>
+
+                </tr>
+            </table>
+        </div>
+
+        <h2 align="middle">Part III: Handling collisions with other objects</h2>
+        <p>
+            The difference between the cloth with default values resting on the sphere and the cloth with low ks
+            is the low ks has the cloth sagging further. Contrast this with the high ks, which gives the cloth a stiffer look.
+            It hangs further over the sphere in a tent like way.
+        </p>
+
+        <div align="middle">
+            <table style="width=100%">
+                <tr>
+                    <td>
+                        <img src="img/part3-img1.png" align="middle" width="400px" />
+                        <figcaption align="middle">default spring constant and density</figcaption>
+                    </td>
+                    <td>
+                        <img src="img/part3-img2.png" align="middle" width="400px" />
+                        <figcaption align="middle">Very low spring constant.</figcaption>
+                    </td>
+                    <td>
+                        <img src="img/part3-img3.png" align="middle" width="400px" />
+                        <figcaption align="middle">Very high spring constant.</figcaption>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img src="img/part3-img4.png" align="middle" width="400px" />
+                        <figcaption align="middle">Cloth resting on plane.</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+
+        <h2 align="middle">Part IV: Handling self-collisions</h2>
+        <p>
+            A spatial map is created to partition all point masses into a corresponding spatial box. All points in the same
+            spatial box are tested to see if they will self collide. If they will collide, then a correction vector is created
+            to correct their position. This is done at each time step.
+        </p>
+
+        <div align="middle">
+            <table style="width=100%">
+                <tr>
+                    <td>
+                        <img src="img/part4-img1.png" align="middle" width="400px" />
+                        <figcaption align="middle">Initial self collision</figcaption>
+                    </td>
+                    <td>
+                        <img src="img/part4-img2.png" align="middle" width="400px" />
+                        <figcaption align="middle">Middle collision.</figcaption>
+                    </td>
+                    <td>
+                        <img src="img/part4-img3.png" align="middle" width="400px" />
+                        <figcaption align="middle">Most of the cloth has self colided and folded over.</figcaption>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img src="img/part4-img4.png" align="middle" width="400px" />
+                        <figcaption align="middle">Cloth resting on plane.</figcaption>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img src="img/part4-img5.png" align="middle" width="400px" />
+                        <figcaption align="middle">High density.</figcaption>
+                    </td>
+                    <td>
+                        <img src="img/part4-img6.png" align="middle" width="400px" />
+                        <figcaption align="middle">Very low density.</figcaption>
+                    </td>
+                    <td>
+                        <img src="img/part4-img7.png" align="middle" width="400px" />
+                        <figcaption align="middle">Very low spring constant.</figcaption>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <img src="img/part4-img8.png" align="middle" width="400px" />
+                        <figcaption align="middle">Very high spring constant.</figcaption>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+    </div></body>
+</html>
